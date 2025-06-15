@@ -38,27 +38,9 @@ The M5Unified library is essential and replaces the older separate M5Stack libra
 
 Make sure you install the latest version of M5Unified, as older versions may have compatibility issues or missing features. The library will automatically pull in any additional dependencies it needs, so you don't need to install anything else manually.
 
-### PlatformIO Setup (For Advanced Users)
-
-If you prefer PlatformIO, which offers better project management and dependency handling, the setup process is different but often more reliable for complex projects. Install Visual Studio Code first, then add the PlatformIO extension from the extensions marketplace.
-
-Create a new PlatformIO project and select "M5Stack Fire" as your board. The platform.io file should include these essential settings:
-
-```ini
-[env:m5stack-fire]
-platform = espressif32
-board = m5stack-fire
-framework = arduino
-lib_deps = m5stack/M5Unified@^0.1.7
-monitor_speed = 115200
-upload_speed = 921600
-```
-
-PlatformIO will automatically handle the M5Unified library installation based on the lib_deps specification. This approach tends to be more reliable for version management and resolving dependency conflicts.
-
 ### Uploading the Code
 
-Download the GameTimer.ino file and open it in your chosen development environment. Connect your M5Stack Fire to your computer using a USB-C cable. Make sure the device is powered on and recognized by your system. On Windows, you might need to install CP210x USB drivers if the device isn't detected.
+Download the M5Cube_M5Fire.ino file and open it in your chosen development environment. Connect your M5Stack Fire to your computer using a USB-C cable. Make sure the device is powered on and recognized by your system. On Windows, you might need to install CP210x USB drivers if the device isn't detected.
 
 Before uploading, double-check your board and port settings. The port should show something like "COM3" on Windows or "/dev/ttyUSB0" on Linux. If you don't see any ports listed, try a different USB cable or restart the M5Stack device.
 
@@ -132,6 +114,6 @@ Since I've only tested on M5Stack Fire, compatibility with other M5Stack models 
 
 ## Conclusion
 
-This GameTimer application transforms the M5Stack Fire into an intuitive multiplayer timer perfect for tabletop gaming. The orientation-based switching eliminates the complexity of menu navigation while providing individual timing for up to five players. Power management features ensure it can last through extended gaming sessions, and the visual feedback makes it easy to see timer status at a glance.
+M5Cube transforms the M5Stack Fire into an intuitive multiplayer timer perfect for tabletop gaming. The orientation-based switching eliminates the complexity of menu navigation while providing individual timing for up to five players. Power management features ensure it can last through extended gaming sessions, and the visual feedback makes it easy to see timer status at a glance.
 
 The code is designed to be easily modifiable for different requirements while maintaining the core functionality that makes it useful for gaming. Whether you're timing turns in a strategy game or managing discussion periods in a party game, this timer provides a simple, effective solution.

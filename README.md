@@ -20,7 +20,7 @@ The 6-axis IMU sensor is crucial for orientation detection. Without this, the au
 
 ## Installation and Setup
 
-Setting up the development environment for M5Stack can be tricky if you're new to the platform, so I'll walk through the complete process for both Arduino IDE and PlatformIO options.
+Setting up the development environment for M5Stack can be tricky if you're new to the platform, so I'll walk through the complete process for Arduino IDE.
 
 ### Arduino IDE Setup (Recommended for Beginners)
 

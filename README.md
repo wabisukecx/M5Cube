@@ -1,119 +1,164 @@
-# M5Cube - Orientation-Based Multiplayer Timer
+# M5Cube Universal - Orientation-Based Multiplayer Timer
 
-This is a multiplayer game timer application designed specifically for the M5Stack platform, inspired by the DGT Cube board game timer. The timer automatically detects device orientation using the built-in IMU sensor to manage up to five different player timers. I originally developed this for tabletop gaming sessions where multiple players need individual countdown timers, and the orientation-based switching eliminates the need for complex menu navigation.
+A universal multiplayer game timer application for both M5Stack Fire and CoreS3, inspired by the DGT Cube. The device automatically detects orientation using the built-in IMU sensor to manage up to 5 individual player timers. Device type is automatically detected and the UI adapts accordingly.
 
-The concept came from noticing the physical similarity between the M5Stack's compact cube-like form factor and the DGT Cube. Both devices use their orientation as a primary interface method, making the M5Stack a natural platform for recreating this intuitive timer concept for board gaming.
+## Features
 
-While the DGT Cube supports up to 6 players with dedicated displays on each face and uses a special base for pausing, M5Cube adapts this concept for the M5Stack platform with 5 player support, a single rotating display, and power-efficient face-down detection for automatic screen shutoff.
+**Universal Design** - Single codebase supports both M5Stack Fire and CoreS3 with automatic device detection and optimized UI for each platform.
 
-## Background and Development
+**Orientation-Based Player Switching** - Simply rotate the device to switch between 5 different player timers using IMU sensor detection.
 
-I created this timer after getting frustrated with managing multiple stopwatches during board game nights. The idea was simple: place the M5Stack device facing different directions, and it would automatically switch to the corresponding player's timer. The device uses its accelerometer to detect which face is pointing up, making it incredibly intuitive to use during gameplay.
+**Overtime Tracking** - When a timer reaches zero, it continues counting upward in red to track overtime duration.
 
-The application has been tested exclusively on the M5Stack Fire, so while it should theoretically work on other M5Stack devices with similar hardware, I cannot guarantee compatibility. The M5Stack Fire's 6-axis IMU and speaker are essential for the core functionality.
+**Power Management** - Automatic screen shutoff when placed face-down, reduced CPU frequency, and optimized display updates for extended battery life.
 
-## Hardware Requirements
+**Adaptive UI** - Running state disables reset functionality with visual feedback (blue text for disabled buttons).
 
-You will need an M5Stack Fire device for this application. While the code uses M5Unified library which supports multiple M5Stack variants, I have only verified operation on the Fire model. The application requires several hardware components that are standard on the Fire:
+## Supported Devices
 
-The 6-axis IMU sensor is crucial for orientation detection. Without this, the automatic player switching won't work. The built-in speaker provides audio feedback when switching between players or entering pause mode. The device also needs to be battery powered for portability during gaming sessions.
+| Device | Input Method | Features |
+|--------|--------------|----------|
+| **M5Stack Fire** | Physical buttons (A/B/C) | Traditional 3-button operation |
+| **M5Stack CoreS3** | Touch screen + Physical buttons | Touch button UI display |
 
-## Installation and Setup
+## DGT Cube Comparison
 
-Setting up the development environment for M5Stack can be tricky if you're new to the platform, so I'll walk through the complete process for Arduino IDE.
+M5Cube reimplements the DGT Cube board game timer concept for the M5Stack platform:
 
-### Arduino IDE Setup (Recommended for Beginners)
+| Feature | DGT Cube | M5Cube |
+|---------|----------|---------|
+| Players | 6 | 5 |
+| Display | Dedicated face displays | Single rotating display |
+| Pause Method | Special base | Face-down detection |
+| Platform | Proprietary hardware | M5Stack |
 
-If you're new to M5Stack development, the Arduino IDE is probably your best starting point. First, download and install the latest Arduino IDE from the official Arduino website. Make sure you get version 1.8.19 or later, as earlier versions may have compatibility issues with the M5Stack board definitions.
+## Setup Guide
 
-Once Arduino IDE is installed, you need to add the M5Stack board definitions. Open Arduino IDE and go to File → Preferences. In the "Additional Board Manager URLs" field, add this URL: `https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json`. If you already have other URLs in this field, separate them with commas.
+### Arduino IDE Environment
 
-Next, go to Tools → Board → Boards Manager. Search for "M5Stack" and install the "M5Stack by M5Stack" package. This process might take a few minutes as it downloads all the necessary files. After installation, you should see M5Stack options under Tools → Board → M5Stack Arduino.
+Follow the detailed setup guides from M5Stack official documentation:
 
-For the M5Stack Fire specifically, select "M5Stack-Fire" from the board menu. Set the upload speed to 921600 for faster uploads, though you can use 115200 if you encounter upload issues. The partition scheme should be set to "Default 4MB with spiffs (1.2MB APP/1.5MB SPIFFS)".
+- **M5Stack Fire**: https://docs.m5stack.com/ja/arduino/m5fire/program
+- **M5Stack CoreS3**: https://docs.m5stack.com/ja/arduino/m5cores3/program
 
-### Installing M5Unified Library
+### Quick Setup Steps
 
-The M5Unified library is essential and replaces the older separate M5Stack libraries. In Arduino IDE, go to Tools → Manage Libraries (or use Ctrl+Shift+I). Search for "M5Unified" and install the library by M5Stack. This library provides unified access to all M5Stack device features and is actively maintained, unlike some of the older individual libraries.
+1. **Install Arduino IDE** (version 1.8.19 or later)
 
-Make sure you install the latest version of M5Unified, as older versions may have compatibility issues or missing features. The library will automatically pull in any additional dependencies it needs, so you don't need to install anything else manually.
+2. **Add M5Stack Board Definitions**
+   - Arduino IDE > Preferences > Additional Board Manager URLs
+   - Add: `https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json`
 
-### Uploading the Code
+3. **Install M5Stack Boards**
+   - Tools > Board > Boards Manager
+   - Search "M5Stack" and install
 
-Download the M5Cube_M5Fire.ino file and open it in your chosen development environment. Connect your M5Stack Fire to your computer using a USB-C cable. Make sure the device is powered on and recognized by your system. On Windows, you might need to install CP210x USB drivers if the device isn't detected.
+4. **Install M5Unified Library**
+   - Tools > Manage Libraries
+   - Search "M5Unified" and install
 
-Before uploading, double-check your board and port settings. The port should show something like "COM3" on Windows or "/dev/ttyUSB0" on Linux. If you don't see any ports listed, try a different USB cable or restart the M5Stack device.
+5. **Board Configuration**
+   - **Fire**: Tools > Board > M5Stack-Fire
+   - **CoreS3**: Tools > Board > M5Stack-CoreS3
 
-Click the upload button and wait for the process to complete. The first upload might take longer as the development environment compiles all the libraries. If you encounter upload errors, try holding the reset button on the M5Stack while initiating the upload, then release it when the upload progress begins.
+### Upload Program
 
-After successful upload, the device will automatically restart and boot into setup mode where you can configure your initial timer duration. If the screen remains blank, try pressing the reset button or disconnecting and reconnecting the power.
+1. Open `M5Cube_Universal.ino` in Arduino IDE
+2. Connect device via USB-C cable
+3. Select appropriate port
+4. Click upload button
 
-## How It Works
+## Usage
 
-When you first power on the device, it starts in setup mode where you can configure the timer duration. The display shows "SETUP" at the top with a time in MM:SS format below. Use the three buttons to set your desired countdown time. Button A increments the currently selected digit, Button C moves to the next digit position, and Button B starts the timer.
+### Initial Setup
+1. Power on device to enter setup mode
+2. Configure timer duration (MM:SS format)
+3. Press Start button to begin timing
 
-Once the timer starts, the magic happens through orientation detection. The device continuously monitors its accelerometer to determine which face is pointing upward. Each orientation corresponds to a different player:
+### Controls
 
-Player 1 corresponds to the Y-axis positive direction, which typically means one side edge pointing up. Player 2 uses the X-axis positive direction, another side edge. Player 3 is Y-axis negative, the opposite side from Player 1. Player 4 uses X-axis negative, opposite from Player 2. Player 5 corresponds to Z-axis positive, which is the normal flat position with the screen facing up.
+#### M5Stack Fire (Physical Buttons)
+| Mode | A Button | B Button | C Button |
+|------|----------|----------|----------|
+| **Setup** | +1 (increment) | Start | Next (digit) |
+| **Stopped** | Reset | Start | - |
+| **Running** | (Reset) | Stop | - |
 
-The threshold for detection is set at 0.7g acceleration in any direction. This provides reliable switching while avoiding false triggers from small movements or vibrations during gameplay.
+#### M5Stack CoreS3 (Touch Screen)
+| Mode | Left Touch | Center Touch | Right Touch |
+|------|------------|--------------|-------------|
+| **Setup** | +1 | START | NEXT |
+| **Stopped** | RESET | START | - |
+| **Running** | (RESET) | STOP | - |
 
-## Power Management Features
+*Note: Parentheses indicate disabled state (blue text)*
 
-One of the key features I implemented is intelligent power management. Gaming sessions can last hours, so battery life was a major concern. The device reduces CPU frequency from the default 240MHz down to 80MHz, which significantly extends battery life without affecting performance for this application.
+### Player Switching
 
-The screen brightness is set to 50% by default, which provides good visibility while conserving power. The battery percentage is displayed in the top-right corner, with color coding: green for good levels, yellow for moderate, and red for low battery. When the device is charging, it shows a plus sign before the percentage.
+The device automatically switches players based on orientation:
 
-The most innovative power feature is automatic screen shutoff when the device is placed face-down. When the Z-axis acceleration drops below -0.7g (indicating the screen is facing down), the device plays a low-frequency warning tone and turns off the display. The timer continues running in the background, but the screen consumes no power. Simply flip the device back over to restore the display and continue timing.
+| Orientation | Player | Acceleration Axis |
+|-------------|--------|-------------------|
+| Front edge up | Player 1 | Y-axis positive |
+| Right edge up | Player 2 | X-axis positive |
+| Back edge up | Player 3 | Y-axis negative |
+| Left edge up | Player 4 | X-axis negative |
+| Flat (screen up) | Player 5 | Z-axis positive |
 
-## User Interface and Visual Feedback
+## Technical Specifications
 
-The interface adapts to each player orientation by automatically rotating the display. This ensures that no matter which direction you're viewing from, the timer appears right-side-up. Player numbers are clearly displayed at the top of the screen.
+### Hardware Requirements
+- M5Stack Fire or M5Stack CoreS3
+- 6-axis IMU sensor (orientation detection)
+- Built-in speaker (audio feedback)
+- Battery power recommended
 
-Time is shown in large, easy-to-read digits in MM:SS format. When a timer reaches zero, it doesn't stop - instead, it continues counting upward in red text to show overtime. This is particularly useful in games where players might go over their allotted time but still need to track how much extra time they've used.
+### Power Optimization
+- CPU frequency reduced to 80MHz (from 240MHz)
+- Screen brightness set to 50%
+- Face-down detection for automatic screen shutoff
+- Partial screen updates for performance
 
-The status line shows whether the timer is "RUNNING" or "STOPPED". Button help text appears at the bottom, though the layout adjusts for different orientations to ensure readability.
+### Device Detection Logic
+```cpp
+// Detection priority
+1. M5.getBoard() for accurate identification
+2. Touch capability fallback detection
+3. Default Fire-compatible operation
+```
 
-## Timer Logic and Behavior
+## Customization
 
-Each of the five player positions maintains its own independent timer. When you set the initial time in setup mode, this duration is copied to all five player timers. As you switch between orientations during gameplay, each timer continues counting down independently.
+### Adjustable Constants
+```cpp
+const float ACCEL_THRESHOLD = 0.9f;        // Orientation sensitivity
+const int TONE_FREQ_HIGH = 2800;           // Switch sound frequency
+const int BUTTON_TEXT_SIZE = 2.5;          // Touch button size (CoreS3)
+```
 
-When a timer reaches zero, it immediately switches to overtime mode, displaying the elapsed overtime in red. This visual distinction makes it immediately obvious when a player has exceeded their allocated time. The timer never stops automatically - you must manually stop it using Button B.
+### Color Settings
+```cpp
+const uint32_t COLOR_WHITE = 0xFFFFFF;     // Normal display
+const uint32_t COLOR_RED = 0xFF0000;       // Overtime mode
+const uint32_t COLOR_BLUE = 0x000066;      // Disabled buttons
+```
 
-Resetting the timers returns all five players to the originally configured duration and switches back to setup mode. This is useful for starting a new round or game with the same time limits.
+## Troubleshooting
 
-## Technical Implementation Details
+**Orientation detection unstable** - Adjust `ACCEL_THRESHOLD` between 0.5-1.0 or place device on stable surface.
 
-The code uses several optimization techniques to balance functionality with performance. IMU updates occur every 20ms during normal operation but reduce to every 100ms when paused to save battery. The display uses partial screen updates whenever possible, only redrawing changed portions rather than the entire screen.
+**Compile errors** - Verify M5Unified library is latest version and board settings are correct.
 
-Battery information updates every 5 seconds rather than continuously to reduce processing overhead. The orientation detection algorithm uses simple threshold comparison rather than complex vector math to minimize CPU usage.
+**Screen unresponsive** - Press any button to wake screen from power-save mode or press reset button.
 
-Audio feedback uses different tones for different events: a high-frequency beep when switching players and a low-frequency warning when entering pause mode. The speaker settings are configured for clear audio without excessive volume.
+**Poor battery life** - Lower screen brightness further or place face-down when not in use.
 
-## Troubleshooting Common Issues
+## Future Development
 
-If the orientation detection seems unreliable, try adjusting the ACCEL_THRESHOLD value in the code. The default 0.7 works well for typical usage, but different handling styles might require tuning. Values between 0.5 and 1.0 usually work best.
+**Potential enhancements** customizable audio settings, game history logging, and WiFi remote control capabilities.
 
-Screen flickering or strange behavior often indicates power issues. Make sure the battery is adequately charged, and consider reducing screen brightness further if problems persist. The auto-shutoff feature when face-down helps conserve power for extended gaming sessions.
+**Current limitations** include 59:59 maximum timer duration, possible false triggers with rapid movement, and unverified compatibility with M5Stack models other than Fire and CoreS3.
 
-If the device becomes unresponsive, try pressing any button when the screen is off to wake it up. The power management features sometimes make it appear frozen when it's actually just in power-save mode.
+## License
 
-## Customization Options
-
-The code includes several constants that can be modified for different use cases. The orientation thresholds can be adjusted if you find the switching too sensitive or not sensitive enough. The tone frequencies and durations can be changed to suit different preferences or environments.
-
-Color constants are defined at the top of the file for easy modification. You might want different colors for different game types or visibility conditions. The timer intervals can also be adjusted, though I recommend keeping them at 1-second resolution for most gaming applications.
-
-## Limitations and Future Development
-
-Currently, the application only supports minutes and seconds, not hours. For most tabletop games, this range is sufficient, but longer strategy games might benefit from hour support. The maximum timer duration is 59:59, which should cover most gaming scenarios.
-
-The orientation detection works best when the device is relatively stable. Rapid movements or vibrations can cause unwanted switching, though the threshold is set to minimize this issue. In very active gaming environments, you might need to adjust the sensitivity.
-
-Since I've only tested on M5Stack Fire, compatibility with other M5Stack models remains unverified. The M5Unified library should provide good compatibility, but hardware differences might require code adjustments.
-
-## Conclusion
-
-M5Cube transforms the M5Stack Fire into an intuitive multiplayer timer perfect for tabletop gaming. The orientation-based switching eliminates the complexity of menu navigation while providing individual timing for up to five players. Power management features ensure it can last through extended gaming sessions, and the visual feedback makes it easy to see timer status at a glance.
-
-The code is designed to be easily modifiable for different requirements while maintaining the core functionality that makes it useful for gaming. Whether you're timing turns in a strategy game or managing discussion periods in a party game, this timer provides a simple, effective solution.
+This project is open source and freely available for personal and commercial use.

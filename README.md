@@ -1,4 +1,4 @@
-# M5Cube Universal - Orientation-Based Multiplayer Timer
+# M5Cube - Orientation-Based Multiplayer Timer
 
 A universal multiplayer game timer application for both M5Stack Fire and CoreS3, inspired by the DGT Cube. The device automatically detects orientation using the built-in IMU sensor to manage up to 5 individual player timers. Device type is automatically detected and the UI adapts accordingly.
 

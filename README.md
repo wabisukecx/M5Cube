@@ -1,8 +1,3 @@
-了解しました。以下に、先ほどの英訳READMEを**そのままMarkdown形式**で整形したものを記載します。GitHubなどでの使用にそのまま適しています。
-
----
-
-```markdown
 # M5Cube - Advanced Orientation-Based Multiplayer Timer
 
 A comprehensive multiplayer game timer app compatible with M5Stack Fire and CoreS3. It features dual timer modes, customizable sound alerts, and intelligent orientation-based player switching. The app automatically adapts its interface based on the device's hardware, offering professional-grade timing functions for board games.

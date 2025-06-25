@@ -164,7 +164,7 @@ Search: "M5Unified" → Install latest version
 5. **Upload the Program**
 - Open `M5Cube.ino`
 - Connect device via USB-C
-- Select correct COM port
+- Select correct COM port(Tools > Port > COM)
 - Upload
 
 ---

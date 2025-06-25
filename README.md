@@ -15,7 +15,7 @@ A comprehensive multiplayer game timer app compatible with M5Stack Fire and Core
 
 ### Advanced Sound System  
 - Toggleable sound alerts  
-- Multi-phase countdown warnings (10s, 5s, 4s–1s)  
+- Multi-phase countdown warnings (10s, 5s–1s)  
 - Distinct tones for different events
 
 ### Intelligent Navigation  

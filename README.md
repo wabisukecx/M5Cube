@@ -137,7 +137,7 @@ Pick your preferred timer mode:
 ```
 
 File > Preferences > Additional Board Manager URLs:
-[https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package\_m5stack\_index.json](https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json)
+https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
 
 ```
 

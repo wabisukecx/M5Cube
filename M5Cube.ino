@@ -71,6 +71,23 @@ const uint32_t COLOR_YELLOW = 0xFFFF00;
 // Long press detection
 const unsigned long LONG_PRESS_DURATION = 1000;
 
+// レイアウト用定数
+const int SCREEN_CENTER_X = 160;
+const int SCREEN_CENTER_Y = 120;
+const int TITLE_Y = 30;
+const int OPTION1_Y = 90;
+const int OPTION2_Y = 130;
+const int TIMER_Y = 120;
+const int TIMER_AREA_WIDTH = 200;
+const int TIMER_AREA_HEIGHT = 60;
+
+// レイアウト座標取得関数
+inline int getScreenCenterX() { return M5.Display.width() / 2; }
+inline int getScreenCenterY() { return M5.Display.height() / 2; }
+inline int getTitleY() { return TITLE_Y; }
+inline int getOptionY(int idx) { return OPTION1_Y + (idx * (OPTION2_Y - OPTION1_Y)); }
+inline int getTimerY() { return TIMER_Y; }
+
 // =============================================================================
 // DATA STRUCTURES AND ENUMS
 // =============================================================================
@@ -187,6 +204,7 @@ void drawTimerDisplayFull();
 void updateTimerOnly();
 void drawTimerDisplay();
 void drawSetupMode();
+void drawSelectMenu(const char* title, const char* options[], int optionCount, int selectedIdx);
 
 // Input handling
 void handleButtons();
@@ -638,40 +656,27 @@ void updateSoundSelectOnly() {
 void drawModeSelectScreenFull() {
   M5.Display.fillScreen(COLOR_BLUE);
   M5.Display.setRotation(1);
-  
-  // Header elements
+
   drawBatteryInfo();
-  
+
   M5.Display.setTextSize(3);
   M5.Display.setTextColor(COLOR_WHITE);
   M5.Display.setTextDatum(top_center);
-  M5.Display.drawString("SELECT MODE", 160, 30);
-  
-  // Mode options with selection highlighting
+  M5.Display.drawString("SELECT MODE", getScreenCenterX(), getTitleY());
+
   M5.Display.setTextSize(4);
   M5.Display.setTextDatum(middle_center);
-  
+
   // Game Timer option
-  if (modeSelectPosition == 0 && blinkState) {
-    M5.Display.setTextColor(COLOR_YELLOW);
-  } else if (modeSelectPosition == 0) {
-    M5.Display.setTextColor(COLOR_BLUE);
-  } else {
-    M5.Display.setTextColor(COLOR_WHITE);
-  }
-  M5.Display.drawString("Game Timer", 160, 90);
-  
+  M5.Display.setTextColor((modeSelectPosition == 0 && blinkState) ? COLOR_YELLOW :
+                          (modeSelectPosition == 0) ? COLOR_BLUE : COLOR_WHITE);
+  M5.Display.drawString("Game Timer", getScreenCenterX(), getOptionY(0));
+
   // Move Timer option
-  if (modeSelectPosition == 1 && blinkState) {
-    M5.Display.setTextColor(COLOR_YELLOW);
-  } else if (modeSelectPosition == 1) {
-    M5.Display.setTextColor(COLOR_BLUE);
-  } else {
-    M5.Display.setTextColor(COLOR_WHITE);
-  }
-  M5.Display.drawString("Move Timer", 160, 130);
-  
-  // Device-specific UI elements
+  M5.Display.setTextColor((modeSelectPosition == 1 && blinkState) ? COLOR_YELLOW :
+                          (modeSelectPosition == 1) ? COLOR_BLUE : COLOR_WHITE);
+  M5.Display.drawString("Move Timer", getScreenCenterX(), getOptionY(1));
+
   if (deviceType == DEVICE_CORES3) {
     drawTouchButtons();
   } else {
@@ -714,36 +719,32 @@ void updateModeSelectOnly() {
 void drawSetupModeFull() {
   M5.Display.fillScreen(COLOR_BLUE);
   M5.Display.setRotation(1);
-  
-  // Header elements
+
   drawBatteryInfo();
-  
+
   M5.Display.setTextSize(3);
   M5.Display.setTextColor(COLOR_WHITE);
   M5.Display.setTextDatum(top_center);
-  
+
   formatModeTitle(currentTimerMode, titleBuffer);
-  M5.Display.drawString(titleBuffer, 160, 30);
-  
-  // Time configuration display with digit blinking
+  M5.Display.drawString(titleBuffer, getScreenCenterX(), getTitleY());
+
   M5.Display.setTextSize(6);
   formatTime(dig01, dig02, dig03, dig04, timeBuffer);
-  
-  // Apply blinking effect to current digit
+
   if (!blinkState) {
     switch (updatePosition) {
-      case 0: timeBuffer[0] = ' '; break;  // Minutes tens
-      case 1: timeBuffer[1] = ' '; break;  // Minutes ones
-      case 2: timeBuffer[3] = ' '; break;  // Seconds tens
-      case 3: timeBuffer[4] = ' '; break;  // Seconds ones
+      case 0: timeBuffer[0] = ' '; break;
+      case 1: timeBuffer[1] = ' '; break;
+      case 2: timeBuffer[3] = ' '; break;
+      case 3: timeBuffer[4] = ' '; break;
     }
   }
-  
+
   M5.Display.setTextColor(COLOR_WHITE);
   M5.Display.setTextDatum(middle_center);
-  M5.Display.drawString(timeBuffer, 160, 120);
+  M5.Display.drawString(timeBuffer, getScreenCenterX(), getTimerY());
 
-  // Device-specific UI elements
   if (deviceType == DEVICE_CORES3) {
     drawTouchButtons();
   } else {
@@ -771,7 +772,7 @@ void updateSetupTimerOnly() {
   
   M5.Display.setTextColor(COLOR_WHITE);
   M5.Display.setTextDatum(middle_center);
-  M5.Display.drawString(timeBuffer, 160, 120);
+  M5.Display.drawString(timeBuffer, getScreenCenterX(), getTimerY());
 }
 
 // =============================================================================
@@ -1513,4 +1514,31 @@ void formatModeTitle(TimerMode mode, char* buffer) {
   } else {
     strcpy(buffer, "MOVE TIMER");
   }
+}
+
+uint32_t getSelectColor(bool selected, bool blink) {
+  if (selected && blink) return COLOR_YELLOW;
+  if (selected) return COLOR_BLUE;
+  return COLOR_WHITE;
+}
+
+void drawSelectMenu(const char* title, const char* options[], int optionCount, int selectedIdx) {
+  M5.Display.setTextSize(3);
+  M5.Display.setTextColor(COLOR_WHITE);
+  M5.Display.setTextDatum(top_center);
+  M5.Display.drawString(title, getScreenCenterX(), getTitleY());
+
+  M5.Display.setTextSize(4);
+  M5.Display.setTextDatum(middle_center);
+  for (int i = 0; i < optionCount; ++i) {
+    M5.Display.setTextColor(getSelectColor(selectedIdx == i, blinkState));
+    M5.Display.drawString(options[i], getScreenCenterX(), getOptionY(i));
+  }
+}
+
+uint32_t getBatteryColor(int batteryLevel, bool isCharging) {
+  if (isCharging) return COLOR_GREEN;
+  if (batteryLevel <= 20) return COLOR_RED;
+  if (batteryLevel <= 50) return COLOR_YELLOW;
+  return COLOR_GREEN;
 }

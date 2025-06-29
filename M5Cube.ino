@@ -1,8 +1,8 @@
 /*
- * M5Stack Board Game Clock Timer
+ * M5Stack Board Game Clock Timer with Move Timer + Save
  * 
  * A multi-player timer application for M5Stack devices (Fire/CoreS3).
- * Supports both Game Timer (total time per player) and Move Timer (time per move) modes.
+ * Supports Game Timer, Move Timer, and Move Timer + Save modes.
  * Features IMU-based orientation detection for automatic player switching.
  * 
  * Compatible devices:
@@ -59,7 +59,7 @@ const int MAX_DIGIT_TENS_SECONDS = 5;
 // String buffer sizes
 const int TIME_BUFFER_SIZE = 6;
 const int BATTERY_BUFFER_SIZE = 8;
-const int TITLE_BUFFER_SIZE = 16;
+const int TITLE_BUFFER_SIZE = 20;
 
 // Color definitions
 const uint32_t COLOR_WHITE = 0xFFFFFF;
@@ -71,21 +71,26 @@ const uint32_t COLOR_YELLOW = 0xFFFF00;
 // Long press detection
 const unsigned long LONG_PRESS_DURATION = 1000;
 
-// レイアウト用定数
+// Layout constants
 const int SCREEN_CENTER_X = 160;
 const int SCREEN_CENTER_Y = 120;
 const int TITLE_Y = 30;
-const int OPTION1_Y = 90;
-const int OPTION2_Y = 130;
+const int OPTION1_Y = 80;
+const int OPTION2_Y = 110;
+const int OPTION3_Y = 140;
 const int TIMER_Y = 120;
 const int TIMER_AREA_WIDTH = 200;
 const int TIMER_AREA_HEIGHT = 60;
 
-// レイアウト座標取得関数
+// Layout coordinate helper functions
 inline int getScreenCenterX() { return M5.Display.width() / 2; }
 inline int getScreenCenterY() { return M5.Display.height() / 2; }
 inline int getTitleY() { return TITLE_Y; }
-inline int getOptionY(int idx) { return OPTION1_Y + (idx * (OPTION2_Y - OPTION1_Y)); }
+inline int getOptionY(int idx) { 
+  if (idx == 0) return OPTION1_Y;
+  if (idx == 1) return OPTION2_Y;
+  return OPTION3_Y;
+}
 inline int getTimerY() { return TIMER_Y; }
 
 // =============================================================================
@@ -106,8 +111,9 @@ enum DeviceType {
 
 // Timer operation modes
 enum TimerMode {
-  GAME_TIMER,  // Traditional chess clock (total time per player)
-  MOVE_TIMER   // Move-based timer (fixed time per move)
+  GAME_TIMER,      // Traditional chess clock (total time per player)
+  MOVE_TIMER,      // Move-based timer (fixed time per move)
+  MOVE_TIMER_SAVE  // Move timer with saved time carry-over
 };
 
 // Application screen states
@@ -133,7 +139,9 @@ int modeSelectPosition = 0;
 // Timer state management
 int timeList[MAX_PLAYERS] = {0, 0, 0, 0, 0};
 int negativeList[MAX_PLAYERS] = {0, 0, 0, 0, 0};
+int savedTimeList[MAX_PLAYERS] = {0, 0, 0, 0, 0}; // For Move Timer + Save
 int moveTimeRemaining = 0;
+int baseMoveTime = 0; // Base time per move for Move Timer + Save
 int currentFace = 4;
 bool statusFlg = false;
 bool startFlg = false;
@@ -190,6 +198,7 @@ static char titleBuffer[TITLE_BUFFER_SIZE];
 void detectDeviceType();
 void updateGameTimer(int faceIndex);
 void updateMoveTimer(int faceIndex);
+void updateMoveTimerSave(int faceIndex);
 void checkTimeWarnings(int remainingSeconds, int playerIndex);
 void resetWarningFlags(int playerIndex = -1);
 
@@ -320,6 +329,13 @@ void loop() {
     // Handle device orientation changes
     if (orientation >= 0 && orientation != currentFace) {
       int previousFace = currentFace;
+      
+      // Save previous player's remaining time BEFORE switching (Move Timer + Save only)
+      if (currentTimerMode == MOVE_TIMER_SAVE && isValidPlayerIndex(previousFace)) {
+        // Save remaining time (replace, not accumulate)
+        savedTimeList[previousFace] = moveTimeRemaining > 0 ? moveTimeRemaining : 0;
+      }
+      
       currentFace = orientation;
       needsFullRedraw = true;
       needsBatteryUpdate = true;
@@ -332,9 +348,13 @@ void loop() {
         isPlayingWarningSound = false;
       }
       
-      // Reset move timer for new player
+      // Reset move timer for new player based on mode
       if (currentTimerMode == MOVE_TIMER) {
         switchToNextPlayer();
+      } else if (currentTimerMode == MOVE_TIMER_SAVE) {
+        // Set time for new player: base time + saved time
+        moveTimeRemaining = baseMoveTime + savedTimeList[currentFace];
+        resetWarningFlags(currentFace);
       }
     }
     
@@ -349,8 +369,10 @@ void loop() {
       // Update timer based on current mode
       if (currentTimerMode == GAME_TIMER) {
         updateGameTimer(orientation);
-      } else {
+      } else if (currentTimerMode == MOVE_TIMER) {
         updateMoveTimer(orientation);
+      } else if (currentTimerMode == MOVE_TIMER_SAVE) {
+        updateMoveTimerSave(orientation);
       }
       
       // Render updates only when display is active
@@ -508,8 +530,27 @@ void updateMoveTimer(int faceIndex) {
   }
 }
 
+void updateMoveTimerSave(int faceIndex) {
+  if (moveTimeRemaining > 0) {
+    calculateTimeDigits(moveTimeRemaining, dig01, dig02, dig03, dig04);
+    moveTimeRemaining = moveTimeRemaining - 1;
+    checkTimeWarnings(moveTimeRemaining + 1, currentFace);
+  } else {
+    // Move time expired
+    dig01 = dig02 = dig03 = dig04 = 0;
+    
+    // Move timeout notification
+    if (soundEnabled) {
+      isPlayingWarningSound = true;
+      playTone(TONE_FREQ_LOW, TONE_DURATION_WARNING * 3);
+      delay(TONE_DURATION_WARNING * 3 + 100);
+      isPlayingWarningSound = false;
+    }
+  }
+}
+
 void switchToNextPlayer() {
-  // Reset move timer for new player
+  // Reset move timer for new player (standard move timer)
   moveTimeRemaining = moveTimerDig01 * SECONDS_PER_TEN_MINUTES + 
                      moveTimerDig02 * SECONDS_PER_MINUTE + 
                      moveTimerDig03 * 10 + 
@@ -664,7 +705,7 @@ void drawModeSelectScreenFull() {
   M5.Display.setTextDatum(top_center);
   M5.Display.drawString("SELECT MODE", getScreenCenterX(), getTitleY());
 
-  M5.Display.setTextSize(4);
+  M5.Display.setTextSize(3);
   M5.Display.setTextDatum(middle_center);
 
   // Game Timer option
@@ -677,6 +718,11 @@ void drawModeSelectScreenFull() {
                           (modeSelectPosition == 1) ? COLOR_BLUE : COLOR_WHITE);
   M5.Display.drawString("Move Timer", getScreenCenterX(), getOptionY(1));
 
+  // Move Timer + Save option
+  M5.Display.setTextColor((modeSelectPosition == 2 && blinkState) ? COLOR_YELLOW :
+                          (modeSelectPosition == 2) ? COLOR_BLUE : COLOR_WHITE);
+  M5.Display.drawString("Move + Save", getScreenCenterX(), getOptionY(2));
+
   if (deviceType == DEVICE_CORES3) {
     drawTouchButtons();
   } else {
@@ -686,9 +732,9 @@ void drawModeSelectScreenFull() {
 
 void updateModeSelectOnly() {
   // Efficient partial update of mode options
-  M5.Display.fillRect(50, 70, 220, 80, COLOR_BLUE);
+  M5.Display.fillRect(50, 60, 220, 100, COLOR_BLUE);
   
-  M5.Display.setTextSize(4);
+  M5.Display.setTextSize(3);
   M5.Display.setTextDatum(middle_center);
   
   // Game Timer option
@@ -699,7 +745,7 @@ void updateModeSelectOnly() {
   } else {
     M5.Display.setTextColor(COLOR_WHITE);
   }
-  M5.Display.drawString("Game Timer", 160, 90);
+  M5.Display.drawString("Game Timer", 160, getOptionY(0));
   
   // Move Timer option
   if (modeSelectPosition == 1 && blinkState) {
@@ -709,7 +755,17 @@ void updateModeSelectOnly() {
   } else {
     M5.Display.setTextColor(COLOR_WHITE);
   }
-  M5.Display.drawString("Move Timer", 160, 130);
+  M5.Display.drawString("Move Timer", 160, getOptionY(1));
+
+  // Move Timer + Save option
+  if (modeSelectPosition == 2 && blinkState) {
+    M5.Display.setTextColor(COLOR_YELLOW);
+  } else if (modeSelectPosition == 2) {
+    M5.Display.setTextColor(COLOR_BLUE);
+  } else {
+    M5.Display.setTextColor(COLOR_WHITE);
+  }
+  M5.Display.drawString("Move + Save", 160, getOptionY(2));
 }
 
 // =============================================================================
@@ -805,8 +861,14 @@ void drawTimerDisplayFull() {
   M5.Display.setTextColor(COLOR_WHITE);
   M5.Display.setTextDatum(top_center);
   
-  sprintf(titleBuffer, "P%d %s", currentFace + 1, 
-          (currentTimerMode == GAME_TIMER) ? "GAME" : "MOVE");
+  const char* modeText = "";
+  switch (currentTimerMode) {
+    case GAME_TIMER: modeText = "GAME"; break;
+    case MOVE_TIMER: modeText = "MOVE"; break;
+    case MOVE_TIMER_SAVE: modeText = "SAVE"; break;
+  }
+  
+  sprintf(titleBuffer, "P%d %s", currentFace + 1, modeText);
   M5.Display.drawString(titleBuffer, centerX, 20);
   
   // Timer display with appropriate color coding
@@ -814,7 +876,8 @@ void drawTimerDisplayFull() {
   if (currentTimerMode == GAME_TIMER && isValidPlayerIndex(currentFace) && 
       negativeList[currentFace] == 1) {
     timerColor = COLOR_RED;  // Overtime in game mode
-  } else if (currentTimerMode == MOVE_TIMER && moveTimeRemaining == 0) {
+  } else if ((currentTimerMode == MOVE_TIMER || currentTimerMode == MOVE_TIMER_SAVE) && 
+             moveTimeRemaining == 0) {
     timerColor = COLOR_RED;  // Move time expired
   }
   
@@ -824,12 +887,27 @@ void drawTimerDisplayFull() {
   formatTime(dig01, dig02, dig03, dig04, timeBuffer);
   M5.Display.drawString(timeBuffer, centerX, centerY);
   
-  // Status indicator
-  M5.Display.setTextSize(2);
-  M5.Display.setTextColor(COLOR_WHITE);
-  M5.Display.setTextDatum(bottom_center);
-  const char* status = statusFlg ? "RUNNING" : "STOPPED";
-  M5.Display.drawString(status, centerX, screenH - 60);
+  // Display saved time for Move Timer + Save mode
+  if (currentTimerMode == MOVE_TIMER_SAVE && isValidPlayerIndex(currentFace)) {
+    M5.Display.setTextSize(2);
+    M5.Display.setTextColor(COLOR_GREEN);
+    M5.Display.setTextDatum(middle_center);
+    
+    int savedTime = savedTimeList[currentFace];
+    int savedMin = savedTime / 60;
+    int savedSec = savedTime % 60;
+    sprintf(titleBuffer, "Bank: %d:%02d", savedMin, savedSec);
+    M5.Display.drawString(titleBuffer, centerX, centerY + 50);
+  }
+  
+  // Status indicator (not shown for Move Timer + Save)
+  if (currentTimerMode != MOVE_TIMER_SAVE) {
+    M5.Display.setTextSize(2);
+    M5.Display.setTextColor(COLOR_WHITE);
+    M5.Display.setTextDatum(bottom_center);
+    const char* status = statusFlg ? "RUNNING" : "STOPPED";
+    M5.Display.drawString(status, centerX, screenH - 60);
+  }
   
   // Device-specific UI elements
   if (deviceType == DEVICE_CORES3) {
@@ -850,12 +928,18 @@ void updateTimerOnly() {
   M5.Display.fillRect(centerX - timerArea.width/2, centerY - timerArea.height/2, 
                       timerArea.width, timerArea.height, COLOR_BLUE);
   
+  // Clear saved time area for Move Timer + Save
+  if (currentTimerMode == MOVE_TIMER_SAVE) {
+    M5.Display.fillRect(centerX - 80, centerY + 35, 160, 25, COLOR_BLUE);
+  }
+  
   // Timer color based on current state
   uint32_t timerColor = COLOR_WHITE;
   if (currentTimerMode == GAME_TIMER && isValidPlayerIndex(currentFace) && 
       negativeList[currentFace] == 1) {
     timerColor = COLOR_RED;
-  } else if (currentTimerMode == MOVE_TIMER && moveTimeRemaining == 0) {
+  } else if ((currentTimerMode == MOVE_TIMER || currentTimerMode == MOVE_TIMER_SAVE) && 
+             moveTimeRemaining == 0) {
     timerColor = COLOR_RED;
   }
   
@@ -864,6 +948,19 @@ void updateTimerOnly() {
   M5.Display.setTextDatum(middle_center);
   formatTime(dig01, dig02, dig03, dig04, timeBuffer);
   M5.Display.drawString(timeBuffer, centerX, centerY);
+  
+  // Update saved time for Move Timer + Save mode
+  if (currentTimerMode == MOVE_TIMER_SAVE && isValidPlayerIndex(currentFace)) {
+    M5.Display.setTextSize(2);
+    M5.Display.setTextColor(COLOR_GREEN);
+    M5.Display.setTextDatum(middle_center);
+    
+    int savedTime = savedTimeList[currentFace];
+    int savedMin = savedTime / 60;
+    int savedSec = savedTime % 60;
+    sprintf(titleBuffer, "Bank: %d:%02d", savedMin, savedSec);
+    M5.Display.drawString(titleBuffer, centerX, centerY + 50);
+  }
 }
 
 // Compatibility functions
@@ -986,10 +1083,14 @@ void handlePhysicalButtons() {
       
     case SCREEN_MODE_SELECT:
       if (leftPressed || rightPressed) {
-        modeSelectPosition = (modeSelectPosition == 0) ? 1 : 0;
+        modeSelectPosition = (modeSelectPosition + 1) % 3;
       }
       if (centerPressed) {
-        currentTimerMode = (modeSelectPosition == 0) ? GAME_TIMER : MOVE_TIMER;
+        switch (modeSelectPosition) {
+          case 0: currentTimerMode = GAME_TIMER; break;
+          case 1: currentTimerMode = MOVE_TIMER; break;
+          case 2: currentTimerMode = MOVE_TIMER_SAVE; break;
+        }
         currentScreen = SCREEN_SETUP;
         updatePosition = 0;
         needsFullRedraw = true;
@@ -1022,11 +1123,9 @@ void handlePhysicalButtons() {
       break;
       
     case SCREEN_TIMER:
-      // Modified: Disable A button completely during timer operation
       if (leftPressed && !statusFlg) {
         resetToSetup();
       }
-      // A button is completely ignored when statusFlg is true
       
       if (centerPressed) {
         if (!statusFlg) {
@@ -1127,10 +1226,14 @@ void handleTouchButtons() {
       
     case SCREEN_MODE_SELECT:
       if (leftPressed || rightPressed) {
-        modeSelectPosition = (modeSelectPosition == 0) ? 1 : 0;
+        modeSelectPosition = (modeSelectPosition + 1) % 3;
       }
       if (centerPressed) {
-        currentTimerMode = (modeSelectPosition == 0) ? GAME_TIMER : MOVE_TIMER;
+        switch (modeSelectPosition) {
+          case 0: currentTimerMode = GAME_TIMER; break;
+          case 1: currentTimerMode = MOVE_TIMER; break;
+          case 2: currentTimerMode = MOVE_TIMER_SAVE; break;
+        }
         currentScreen = SCREEN_SETUP;
         updatePosition = 0;
         needsFullRedraw = true;
@@ -1163,11 +1266,9 @@ void handleTouchButtons() {
       break;
       
     case SCREEN_TIMER:
-      // Modified: Disable left touch completely during timer operation
       if (leftPressed && !statusFlg) {
         resetToSetup();
       }
-      // Left touch is completely ignored when statusFlg is true
       
       if (centerPressed) {
         if (!statusFlg) {
@@ -1292,13 +1393,28 @@ void initializeTimers() {
       timeList[i] = totalTime;
       negativeList[i] = 0;
     }
-  } else {
+  } else if (currentTimerMode == MOVE_TIMER) {
     // Initialize move timer
     moveTimerDig01 = dig01;
     moveTimerDig02 = dig02;
     moveTimerDig03 = dig03;
     moveTimerDig04 = dig04;
     moveTimeRemaining = totalTime;
+  } else if (currentTimerMode == MOVE_TIMER_SAVE) {
+    // Initialize move timer + save
+    moveTimerDig01 = dig01;
+    moveTimerDig02 = dig02;
+    moveTimerDig03 = dig03;
+    moveTimerDig04 = dig04;
+    baseMoveTime = totalTime;
+    
+    // Clear all saved times
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+      savedTimeList[i] = 0;
+    }
+    
+    // Set initial time (base time + saved time for current player)
+    moveTimeRemaining = baseMoveTime + savedTimeList[currentFace];
   }
 }
 
@@ -1509,10 +1625,16 @@ void formatBatteryText(int batteryLevel, bool isCharging, char* buffer) {
 
 void formatModeTitle(TimerMode mode, char* buffer) {
   // Format timer mode title
-  if (mode == GAME_TIMER) {
-    strcpy(buffer, "GAME TIMER");
-  } else {
-    strcpy(buffer, "MOVE TIMER");
+  switch (mode) {
+    case GAME_TIMER:
+      strcpy(buffer, "GAME TIMER");
+      break;
+    case MOVE_TIMER:
+      strcpy(buffer, "MOVE TIMER");
+      break;
+    case MOVE_TIMER_SAVE:
+      strcpy(buffer, "MOVE + SAVE");
+      break;
   }
 }
 

@@ -1,12 +1,13 @@
 # M5Cube - Advanced Orientation-Based Multiplayer Timer
 
-A comprehensive multiplayer game timer app compatible with M5Stack Fire and CoreS3. It features dual timer modes, customizable sound alerts, and intelligent orientation-based player switching. The app automatically adapts its interface based on the device's hardware, offering professional-grade timing functions for board games.
+A comprehensive multiplayer game timer app compatible with M5Stack Fire and CoreS3. It features triple timer modes, customizable sound alerts, and intelligent orientation-based player switching. The app automatically adapts its interface based on the device's hardware, offering professional-grade timing functions for board games.
 
 ## Key Features
 
-### Dual Timer Modes  
+### Triple Timer Modes  
 - **Game Timer**: Classic chess-clock style with separate time pools for each player  
-- **Turn Timer**: Fixed time per turn that resets upon player switch
+- **Move Timer**: Fixed time per move that resets upon player switch
+- **Move Timer + Save**: Fixed time per move with unused time banking system
 
 ### Smart Setup System  
 - Initial sound configuration  
@@ -47,11 +48,18 @@ A comprehensive multiplayer game timer app compatible with M5Stack Fire and Core
 - Overtime is tracked in red  
 - Ideal for turn-based strategy games
 
-### Turn Timer  
+### Move Timer  
 - Each turn starts with the same time  
 - Timer resets on player switch  
 - Suitable for speed games or high-pressure play  
 - Ensures consistent pace
+
+### Move Timer + Save
+- Each turn starts with base time + previously saved time
+- Unused time from previous moves is "banked" for future use
+- Displays current "Bank" balance in green
+- Strategic time management - save time early for complex moves later
+- Perfect for games where move complexity varies significantly
 
 ---
 
@@ -65,7 +73,8 @@ Choose preferred sound behavior:
 ### 2. Mode Selection
 Pick your preferred timer mode:
 - **Game Timer**: Per-player time pools
-- **Turn Timer**: Fixed time per turn
+- **Move Timer**: Fixed time per turn
+- **Move + Save**: Time banking system
 
 ### 3. Time Configuration
 - MM:SS format (max 59:59)
@@ -76,6 +85,7 @@ Pick your preferred timer mode:
 - Auto detection via IMU
 - Visual player indicators
 - Tracks overtime and triggers alerts
+- Shows banked time (Move + Save mode only)
 
 ---
 
@@ -124,6 +134,36 @@ Pick your preferred timer mode:
 
 ---
 
+## Timer Mode Details
+
+### Game Timer Operation
+- Individual time pools countdown only during player's turn
+- Red display indicates overtime (negative time)
+- Each player manages their total allocated time
+- Time stops completely when device is face-down
+
+### Move Timer Operation  
+- Fresh timer starts for each player's turn
+- Consistent time pressure for all moves
+- No time accumulation between turns
+- Ideal for maintaining game pace
+
+### Move Timer + Save Operation
+- **Base Time**: Initial time allocated per move (set during configuration)
+- **Saved Time**: Unused time from previous moves (displayed as "Bank")
+- **Total Available**: Base Time + Saved Time for current move
+- **Banking**: Any unused time is automatically saved for future moves
+- **Strategic Element**: Players can rush simple moves to save time for complex ones
+- **Visual Indicator**: Green "Bank: M:SS" shows accumulated saved time
+
+**Example Move Timer + Save Scenario:**
+1. Set base time: 2:00 per move
+2. Player 1's first move: Uses 1:30, saves 0:30
+3. Player 1's second move: Gets 2:00 + 0:30 = 2:30 total
+4. Uses 2:45 total (base + saved), saves 0:00 for next time
+
+---
+
 ## Setup Guide
 
 ### Requirements
@@ -135,27 +175,21 @@ Pick your preferred timer mode:
 
 1. **Configure Arduino IDE**
 ```
-
 File > Preferences > Additional Board Manager URLs:
 https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
-
 ```
 
 2. **Install Board Support**
 ```
-
 Tools > Board > Board Manager
 Search: "M5Stack" → Install
-
 ```
 
 3. **Install Required Library**
 ```
-
 Tools > Manage Libraries
 Search: "M5Unified" → Install latest version
-
-````
+```
 
 4. **Select Your Board**
 - **Fire**: Tools > Board > M5Stack-Fire  
@@ -184,6 +218,29 @@ Search: "M5Unified" → Install latest version
 
 ---
 
+## Display Elements
+
+### Game Timer Mode
+- Large white timer display (MM:SS)
+- Red display for overtime
+- Player number and mode indicator
+- Running/Stopped status
+
+### Move Timer Mode  
+- Large white timer display (MM:SS)
+- Red display when time expires
+- Player number and mode indicator
+- Fresh timer each turn
+
+### Move Timer + Save Mode
+- Large white timer display (MM:SS) - current available time
+- Green "Bank: M:SS" display - saved time from previous moves
+- Red display when current move time expires
+- Player number and "SAVE" mode indicator
+- No running/stopped status (streamlined display)
+
+---
+
 ## Power Management
 
 - **CPU Frequency**: Reduced to 80MHz (from 240MHz)  
@@ -207,8 +264,29 @@ Search: "M5Unified" → Install latest version
 - **Memory optimization** with static buffers  
 - **Accurate countdown** (1s resolution)  
 - **Overtime tracking** (in red)  
+- **Time banking system** (Move + Save mode)
 - **Supports up to 5 players**  
 - **State persistence during switch**
+
+---
+
+## Use Cases by Timer Mode
+
+### Game Timer
+- **Chess**: Classic tournament time control
+- **Go**: Long strategic games with individual time pools
+- **Complex strategy games**: Where total thinking time matters
+
+### Move Timer
+- **Speed chess/Blitz**: Consistent time pressure
+- **Party games**: Keep the game moving
+- **Teaching games**: Prevent analysis paralysis
+
+### Move Timer + Save
+- **Tournament play**: Strategic time management
+- **Puzzle games**: Save time on easy moves for hard ones
+- **Competitive gaming**: Reward efficient play
+- **Variable complexity games**: Adapt to move difficulty
 
 ---
 
@@ -230,21 +308,21 @@ const int TONE_FREQ_LOW = 1000;
 // Display settings
 const int BUTTON_TEXT_SIZE = 2.5;
 const int BLINK_INTERVAL = 400;
-````
+```
 
 ---
 
 ## Roadmap
 
 ### Upcoming Features
-
-* Additional timer modes like those in DGT CUBE
+- Additional timer modes like those in DGT CUBE
+- Preset time configurations
+- Game-specific timer profiles
 
 ### Hardware Expansion
-
-* Compatibility with **M5Stack Basic**
-* External orientation sensors
-* External display support
+- Compatibility with **M5Stack Basic**
+- External orientation sensors
+- External display support
 
 ---
 
@@ -256,6 +334,8 @@ const int BLINK_INTERVAL = 400;
 | Timer Accuracy     | ±1 sec per hour          |
 | Battery Life       | 8–12 hours (typical use) |
 | Memory Usage       | < 50% of available RAM   |
+| Timer Modes        | 3 (Game/Move/Move+Save)  |
+| Max Players        | 5                        |
 
 ---
 
@@ -263,5 +343,3 @@ const int BLINK_INTERVAL = 400;
 
 Released under the MIT License.
 Free for personal, educational, and commercial use.
-
-**M5Cube** – A professional timing solution for serious board gamers.
